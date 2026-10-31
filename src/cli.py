@@ -76,8 +76,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--timeout",
         type=float,
-        default=60.0,
-        help="API request timeout in seconds per image (default: 60)",
+        default=120.0,
+        help="API request timeout in seconds per image (default: 120)",
     )
     return parser
 

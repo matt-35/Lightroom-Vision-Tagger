@@ -67,9 +67,9 @@ class VisionTagger:
     def is_likely_vision_model(model_name: str) -> bool:
         """Heuristic to check if a model ID corresponds to a vision/multimodal model."""
         name = model_name.lower()
-        if any(term in name for term in ["embed", "bert", "gemma-4", "flint"]):
+        if any(term in name for term in ["embed", "bert", "flint"]):
             return False
-        vision_indicators = ["vision", "-vl", "vl-", "omni", "gemma-3", "pixtral", "llava", "internvl", "minicpm-v"]
+        vision_indicators = ["vision", "-vl", "vl-", "omni", "gemma-3", "gemma-4", "pixtral", "llava", "internvl", "minicpm-v"]
         return any(term in name for term in vision_indicators)
 
     def resolve_model(self) -> str:
