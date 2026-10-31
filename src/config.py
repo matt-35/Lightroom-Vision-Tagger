@@ -51,7 +51,7 @@ class TaggerConfig:
     skip_tagged: bool = True      # Skip photos that already contain tags in their XMP
     max_dimension: int = 1536     # Long edge resize for VLM inference
     jpeg_quality: int = 85
-    timeout: float = 120.0
+    timeout: float = 300.0
     hierarchical: bool = True     # Generate lr:hierarchicalSubject tags
     temperature: float = 0.2      # Low temperature for deterministic, accurate tags
     confidence_threshold: str = "high"

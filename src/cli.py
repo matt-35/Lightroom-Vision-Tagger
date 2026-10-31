@@ -76,8 +76,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--timeout",
         type=float,
-        default=120.0,
-        help="API request timeout in seconds per image (default: 120)",
+        default=300.0,
+        help="API request timeout in seconds per image (default: 300)",
     )
     return parser
 
@@ -218,7 +218,7 @@ def run_pipeline(config: TaggerConfig) -> int:
                     consecutive_api_errors += 1
                     if consecutive_api_errors >= 3:
                         console.print("\n[bold red]⚠️ Aborting batch:[/bold red] 3 consecutive API errors from LM Studio.")
-                        console.print("[yellow]The selected model appears to reject vision/image requests. Please select a vision model (e.g. -m gemma-3) or check LM Studio.[/yellow]")
+                        console.print("[yellow]The selected model encountered repeated errors from LM Studio. Please check your model configuration and server logs.[/yellow]")
                         break
 
             progress.advance(task)

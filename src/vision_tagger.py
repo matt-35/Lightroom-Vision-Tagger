@@ -41,6 +41,41 @@ Keep keywords concise, singular where appropriate, lower-case for common tags, a
 """
 
 
+TAGGING_RESPONSE_FORMAT: Dict[str, Any] = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "tagging_result",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "tags": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Descriptive flat keywords"
+                },
+                "places": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Recognized iconic places or landmarks"
+                },
+                "hierarchical_tags": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Lightroom hierarchical tags using pipe delimiter like Category|Subcategory"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "1-2 sentence descriptive caption"
+                }
+            },
+            "required": ["tags", "places", "hierarchical_tags", "description"],
+            "additionalProperties": False
+        }
+    }
+}
+
+
 class VisionTagger:
     """Client for querying LM Studio's local vision models."""
 
@@ -145,7 +180,7 @@ class VisionTagger:
             "model": model_name,
             "messages": messages,
             "temperature": 0.2,
-            "response_format": {"type": "json_object"}
+            "response_format": TAGGING_RESPONSE_FORMAT
         }
 
         with httpx.Client(timeout=self.timeout) as client:
@@ -154,6 +189,15 @@ class VisionTagger:
                 json=payload,
                 headers={"Content-Type": "application/json"}
             )
+            # If server does not support json_schema or rejects response_format, retry without response_format
+            if resp.status_code == 400 and ("response_format" in resp.text.lower() or "schema" in resp.text.lower()):
+                payload.pop("response_format", None)
+                resp = client.post(
+                    f"{self.api_url}/chat/completions",
+                    json=payload,
+                    headers={"Content-Type": "application/json"}
+                )
+
             if resp.status_code != 200:
                 try:
                     err_json = resp.json()
@@ -165,7 +209,7 @@ class VisionTagger:
                 except Exception:
                     err_msg = resp.text
 
-                if "image" in err_msg.lower() or "vision" in err_msg.lower() or resp.status_code == 400:
+                if "image" in err_msg.lower() or "vision" in err_msg.lower():
                     raise RuntimeError(
                         f"LM Studio Error ({resp.status_code}): {err_msg}\n"
                         f"   💡 Note: Model '{model_name}' does not appear to support Vision/Image inputs.\n"
@@ -175,7 +219,10 @@ class VisionTagger:
 
             data = resp.json()
 
-        content = data["choices"][0]["message"]["content"]
+        choice = data["choices"][0]["message"]
+        content = choice.get("content") or ""
+        if not content.strip():
+            content = choice.get("reasoning_content") or ""
         return self._parse_json_response(content)
 
     @staticmethod
