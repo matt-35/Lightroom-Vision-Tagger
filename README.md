@@ -27,7 +27,7 @@ A fast, pure-Python tool that reads camera RAW files and image folders, analyzes
 
 ## 📋 Requirements
 
-- **Python Environment**: Conda `torch` environment (Python 3.14 with `rawpy`, `Pillow`, `httpx`, `rich`, `pydantic`).
+- **Python Environment**: Python 3.14 with `rawpy`, `Pillow`, `httpx`, `rich`, `pydantic`.
 - **LM Studio**: Running locally with a Vision-capable model loaded (e.g., `google/gemma-3-12b`, `qwen/qwen3.6-35b-a3b`, `nvidia/nemotron-3-nano-omni`, `flint`, `pixtral`, or `llava`).
 
 ---
@@ -66,9 +66,9 @@ You can use the included `./tagger` launcher directly:
 ./tagger --overwrite -m gemma-3 /path/to/photos
 ```
 
-Alternatively, run with your conda environment:
+Alternatively, run with your python environment:
 ```bash
-/opt/miniconda3/envs/torch/bin/python -m src /path/to/photos
+python -m src /path/to/photos
 ```
 
 ---
@@ -97,7 +97,13 @@ Once the script has finished creating or updating `.xmp` files:
 | `--model` | Specific model ID in LM Studio | Auto-detected |
 | `--url` | LM Studio API endpoint | `http://localhost:1234/v1` |
 | `--max-size` | Long edge pixel dimension for vision input | `1536` |
-| `--timeout` | Timeout in seconds per image | `60.0` |
+| `--timeout` | Timeout in seconds per image | `300.0` |
+
+---
+
+## ⚡ Performance & Optimization
+
+It is recomended to use smaller or quantised models (Ex: `google/gemma-4-e4b`) and turn off reasoning/thinking in LM Studio. Note that smaller models may make more mistakes. 
 
 ---
 
@@ -105,5 +111,5 @@ Once the script has finished creating or updating `.xmp` files:
 
 Run the test suite:
 ```bash
-/opt/miniconda3/envs/torch/bin/python -m unittest discover -s tests -p "test_*.py"
+python -m unittest discover -s tests -p "test_*.py"
 ```
