@@ -26,18 +26,25 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "folder",
         type=Path,
+        nargs="?",
+        default=None,
         help="Path to the directory containing RAW or image files",
+    )
+    parser.add_argument(
+        "-m", "--model",
+        type=str,
+        default=None,
+        help="Model ID or substring in LM Studio (e.g. 'google/gemma-3-12b' or 'gemma-3'). Default: auto-detect vision model",
+    )
+    parser.add_argument(
+        "-l", "--list-models",
+        action="store_true",
+        help="List available models in LM Studio and exit",
     )
     parser.add_argument(
         "-r", "--recursive",
         action="store_true",
         help="Scan directory recursively",
-    )
-    parser.add_argument(
-        "--model",
-        type=str,
-        default=None,
-        help="Model ID in LM Studio (default: auto-detect loaded vision model)",
     )
     parser.add_argument(
         "--url",
@@ -75,7 +82,36 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def list_models_action(api_url: str) -> int:
+    """Queries LM Studio and prints all available models with vision detection."""
+    tagger = VisionTagger(api_url=api_url)
+    try:
+        models = tagger.get_available_models()
+    except Exception as e:
+        console.print(f"[bold red]Failed to connect to LM Studio at {api_url}:[/bold red] {e}")
+        return 1
+
+    table = Table(title=f"Models Available in LM Studio ({api_url})", show_header=True, header_style="bold magenta")
+    table.add_column("#", style="dim", width=4)
+    table.add_column("Model ID", style="bold cyan")
+    table.add_column("Type", justify="center")
+
+    for i, m in enumerate(models, 1):
+        is_vision = tagger.is_likely_vision_model(m)
+        type_str = "[bold green]👁️ Vision / Multimodal[/bold green]" if is_vision else "[dim]Text Only[/dim]"
+        table.add_row(str(i), m, type_str)
+
+    console.print(table)
+    console.print("\n💡 [bold]To use a specific model:[/bold] pass [cyan]-m <model_id>[/cyan] or a substring (e.g. [cyan]-m gemma-3[/cyan])\n")
+    return 0
+
+
 def run_pipeline(config: TaggerConfig) -> int:
+    if config.folder is None:
+        console.print("[bold red]Error:[/bold red] Folder argument is required.")
+        console.print("Run [cyan]./tagger --help[/cyan] for usage or [cyan]./tagger -l[/cyan] to list available models.")
+        return 1
+
     console.print(
         Panel.fit(
             "[bold cyan]Local Vision XMP Auto-Tagger for Lightroom[/bold cyan]\n"
@@ -92,12 +128,14 @@ def run_pipeline(config: TaggerConfig) -> int:
     tagger = VisionTagger(api_url=config.api_url, model=config.model, timeout=config.timeout)
     try:
         resolved_model = tagger.resolve_model()
-        console.print(f"🤖 [bold green]Connected to LM Studio![/bold green] Using model: [bold yellow]{resolved_model}[/bold yellow]\n")
+        is_vision = tagger.is_likely_vision_model(resolved_model)
+        type_badge = "[bold green](Vision Model)[/bold green]" if is_vision else "[bold yellow](⚠️ May be text-only)[/bold yellow]"
+        console.print(f"🤖 [bold green]Connected to LM Studio![/bold green] Using model: [bold yellow]{resolved_model}[/bold yellow] {type_badge}\n")
     except Exception as e:
-        console.print(f"[bold red]Error connecting to LM Studio:[/bold red] {e}")
+        console.print(f"[bold red]Error resolving model in LM Studio:[/bold red] {e}")
         console.print("\n[yellow]Tips:[/yellow]")
-        console.print("  1. Ensure LM Studio is open and the local server is running (Port 1234).")
-        console.print("  2. Ensure a Vision-capable model is loaded (e.g., Qwen2-VL, Gemma 3, Nemotron, Pixtral).")
+        console.print("  1. Ensure LM Studio is open and the local server is running on port 1234.")
+        console.print("  2. Run [bold cyan]./tagger -l[/bold cyan] to see available models.")
         return 1
 
     # 2. Scan files
@@ -119,12 +157,13 @@ def run_pipeline(config: TaggerConfig) -> int:
             console.print("[dim](If images are already tagged, use --force to re-tag them)[/dim]")
         return 0
 
-    console.print(f"🔍 Found [bold cyan]{len(items)}[/bold cyan] image(s) to process.\n")
+    console.print(f"🔍 Found [bold cyan]{len(items)}[/bold cyan] eligible image(s) to process.\n")
 
     # 3. Process images
     extractor = RawExtractor(max_dimension=config.max_dimension, jpeg_quality=config.jpeg_quality)
     success_count = 0
     fail_count = 0
+    consecutive_api_errors = 0
 
     with Progress(
         SpinnerColumn(),
@@ -145,6 +184,9 @@ def run_pipeline(config: TaggerConfig) -> int:
 
                 # Query VLM
                 result = tagger.analyze_image(b64_img)
+
+                # Reset consecutive error counter on success
+                consecutive_api_errors = 0
 
                 # Display in console
                 console.print(f"\n📷 [bold]{item.image_path.name}[/bold] [dim]({dims[0]}x{dims[1]})[/dim]")
@@ -168,8 +210,16 @@ def run_pipeline(config: TaggerConfig) -> int:
 
                 success_count += 1
             except Exception as e:
-                console.print(f"   ❌ [red]Failed:[/red] {e}")
+                console.print(f"\n   ❌ [red]Failed [bold]{item.image_path.name}[/bold]:[/red] {e}")
                 fail_count += 1
+
+                # If the vision model API is rejecting requests with 400 or compatibility issues, abort early
+                if "LM Studio" in str(e) or "400" in str(e):
+                    consecutive_api_errors += 1
+                    if consecutive_api_errors >= 3:
+                        console.print("\n[bold red]⚠️ Aborting batch:[/bold red] 3 consecutive API errors from LM Studio.")
+                        console.print("[yellow]The selected model appears to reject vision/image requests. Please select a vision model (e.g. -m gemma-3) or check LM Studio.[/yellow]")
+                        break
 
             progress.advance(task)
 
@@ -199,6 +249,13 @@ def run_pipeline(config: TaggerConfig) -> int:
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
+
+    if args.list_models:
+        sys.exit(list_models_action(args.url))
+
+    if args.folder is None:
+        parser.print_help()
+        sys.exit(1)
 
     config = TaggerConfig(
         folder=args.folder,

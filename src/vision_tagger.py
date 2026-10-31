@@ -63,20 +63,51 @@ class VisionTagger:
                 f"Ensure LM Studio is running and local server is started. Error: {e}"
             )
 
-    def resolve_model(self) -> str:
-        """Determines which model to use, auto-detecting if none specified."""
-        if self.model:
-            return self.model
+    @staticmethod
+    def is_likely_vision_model(model_name: str) -> bool:
+        """Heuristic to check if a model ID corresponds to a vision/multimodal model."""
+        name = model_name.lower()
+        if any(term in name for term in ["embed", "bert", "gemma-4", "flint"]):
+            return False
+        vision_indicators = ["vision", "-vl", "vl-", "omni", "gemma-3", "pixtral", "llava", "internvl", "minicpm-v"]
+        return any(term in name for term in vision_indicators)
 
+    def resolve_model(self) -> str:
+        """Determines which model to use, supporting exact or partial substring matching,
+        or auto-detecting a vision model if none specified."""
         available = self.get_available_models()
         if not available:
             raise ValueError(f"No models found loaded in LM Studio at {self.api_url}")
 
-        # Prefer vision/omni/multimodal models if identifiable by name
-        vision_candidates = [
-            m for m in available
-            if any(term in m.lower() for term in ["vl", "vision", "omni", "gemma-3", "flint", "pixtral", "llava", "internvl"])
-        ]
+        if self.model:
+            # 1. Exact match
+            if self.model in available:
+                return self.model
+
+            # 2. Case-insensitive exact match
+            for m in available:
+                if m.lower() == self.model.lower():
+                    self.model = m
+                    return self.model
+
+            # 3. Partial substring match (e.g. 'gemma-3' -> 'google/gemma-3-12b')
+            matches = [m for m in available if self.model.lower() in m.lower()]
+            if len(matches) == 1:
+                self.model = matches[0]
+                return self.model
+            elif len(matches) > 1:
+                vision_subset = [m for m in matches if self.is_likely_vision_model(m)]
+                self.model = vision_subset[0] if vision_subset else matches[0]
+                return self.model
+
+            models_list = "\n  - " + "\n  - ".join(available)
+            raise ValueError(
+                f"Model '{self.model}' not found in LM Studio.\n"
+                f"Available models in LM Studio:{models_list}"
+            )
+
+        # Auto-detect if no model specified: pick first vision-capable model
+        vision_candidates = [m for m in available if self.is_likely_vision_model(m)]
         if vision_candidates:
             self.model = vision_candidates[0]
             return self.model
@@ -123,7 +154,25 @@ class VisionTagger:
                 json=payload,
                 headers={"Content-Type": "application/json"}
             )
-            resp.raise_for_status()
+            if resp.status_code != 200:
+                try:
+                    err_json = resp.json()
+                    err_msg = (
+                        err_json.get("error", {}).get("message")
+                        or err_json.get("message")
+                        or str(err_json)
+                    )
+                except Exception:
+                    err_msg = resp.text
+
+                if "image" in err_msg.lower() or "vision" in err_msg.lower() or resp.status_code == 400:
+                    raise RuntimeError(
+                        f"LM Studio Error ({resp.status_code}): {err_msg}\n"
+                        f"   💡 Note: Model '{model_name}' does not appear to support Vision/Image inputs.\n"
+                        f"   Please use a vision model such as google/gemma-3-12b or nvidia/nemotron-3-nano-omni."
+                    )
+                raise RuntimeError(f"LM Studio API Error ({resp.status_code}): {err_msg}")
+
             data = resp.json()
 
         content = data["choices"][0]["message"]["content"]

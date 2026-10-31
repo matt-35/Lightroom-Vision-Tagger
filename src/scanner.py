@@ -58,10 +58,13 @@ class DirectoryScanner:
         return items
 
     def _find_files(self) -> List[Path]:
-        """Finds all matching file paths in the directory."""
+        """Finds all matching file paths in the directory, skipping hidden and macOS AppleDouble files."""
         pattern = "**/*" if self.recursive else "*"
         matched = []
         for p in self.folder.glob(pattern):
+            # Skip hidden files and macOS AppleDouble resource fork sidecars (e.g. ._* or .DS_Store)
+            if p.name.startswith("."):
+                continue
             if p.is_file() and p.suffix.lower() in ALL_SUPPORTED_EXTENSIONS:
                 matched.append(p)
         return sorted(matched)
