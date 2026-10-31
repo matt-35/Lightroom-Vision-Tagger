@@ -44,20 +44,26 @@ A fast, pure-Python tool that reads camera RAW files and image folders, analyzes
 You can use the included `./tagger` launcher directly:
 
 ```bash
+# List available models in LM Studio and see which support Vision:
+./tagger -l
+
+# Use a specific vision model (exact ID or substring like 'gemma-3' or 'nemotron'):
+./tagger -m gemma-3 /path/to/photos
+
 # Preview what tags will be generated without modifying any files:
-./tagger --dry-run /path/to/photos
+./tagger --dry-run -m gemma-3 /path/to/photos
 
 # Process a folder and write .xmp sidecars:
-./tagger /path/to/photos
+./tagger -m gemma-3 /path/to/photos
 
 # Process subfolders recursively:
-./tagger -r /path/to/photos
+./tagger -r -m gemma-3 /path/to/photos
 
 # Re-tag images that already have tags in their XMP:
-./tagger --force /path/to/photos
+./tagger --force -m gemma-3 /path/to/photos
 
 # Overwrite existing tags instead of merging:
-./tagger --overwrite /path/to/photos
+./tagger --overwrite -m gemma-3 /path/to/photos
 ```
 
 Alternatively, run with your conda environment:
