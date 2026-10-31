@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Wrapper to run image-tagger using the conda environment
+CONDA_PYTHON="/opt/miniconda3/envs/torch/bin/python"
+if [ ! -f "$CONDA_PYTHON" ]; then
+    CONDA_PYTHON="python3"
+fi
+exec "$CONDA_PYTHON" -m src "$@"
