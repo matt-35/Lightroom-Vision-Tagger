@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icon.png" alt="Lightroom Vision Auto-Tagger Icon" width="120" height="120">
+</p>
+
 # 📸 Lightroom Local Vision Auto-Tagger
 
 A fast, pure-Python tool that reads camera RAW files and image folders, analyzes them using a local Vision Language Model (VLM) running in **LM Studio**, and writes Lightroom-compatible keywords and hierarchical tags directly into **`.xmp` sidecar files**.

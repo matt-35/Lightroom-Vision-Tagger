@@ -63,6 +63,9 @@ class ImageTaggerApp(ctk.CTk):
         # Dedicated background preview manager with cancellation & cache
         self.preview_manager = PreviewManager(event_queue=self.event_queue, max_dimension=400)
 
+        # Set window icon
+        self._set_app_icon()
+
         self._build_ui()
 
         # Start background event loop polling
@@ -74,6 +77,19 @@ class ImageTaggerApp(ctk.CTk):
         # Initial scan if folder provided
         if self.current_folder and self.current_folder.is_dir():
             self._trigger_scan()
+
+    def _set_app_icon(self):
+        """Loads and sets the desktop application and dock icon."""
+        icon_path = Path(__file__).resolve().parent.parent.parent / "assets" / "icon.png"
+        if icon_path.exists():
+            try:
+                from PIL import Image as PILImage, ImageTk
+                img = PILImage.open(icon_path)
+                photo = ImageTk.PhotoImage(img.resize((64, 64), PILImage.Resampling.LANCZOS))
+                self.wm_iconphoto(True, photo)
+                self._app_icon_ref = photo
+            except Exception:
+                pass
 
     def _build_ui(self):
         self.grid_columnconfigure(1, weight=1)
@@ -92,17 +108,34 @@ class ImageTaggerApp(ctk.CTk):
         brand_frame = ctk.CTkFrame(sidebar, fg_color="transparent")
         brand_frame.grid(row=0, column=0, sticky="ew", padx=16, pady=(16, 10))
 
+        brand_row = ctk.CTkFrame(brand_frame, fg_color="transparent")
+        brand_row.pack(fill="x")
+
+        icon_path = Path(__file__).resolve().parent.parent.parent / "assets" / "icon.png"
+        if icon_path.exists():
+            try:
+                from PIL import Image as PILImage
+                icon_pil = PILImage.open(icon_path).resize((38, 38), PILImage.Resampling.LANCZOS)
+                self.brand_icon = ctk.CTkImage(light_image=icon_pil, dark_image=icon_pil, size=(38, 38))
+                icon_lbl = ctk.CTkLabel(brand_row, image=self.brand_icon, text="")
+                icon_lbl.pack(side="left", padx=(0, 10))
+            except Exception:
+                pass
+
+        title_container = ctk.CTkFrame(brand_row, fg_color="transparent")
+        title_container.pack(side="left", fill="both", expand=True)
+
         app_title = ctk.CTkLabel(
-            brand_frame,
-            text="📸 Image Tagger",
-            font=ctk.CTkFont(size=20, weight="bold"),
+            title_container,
+            text="Image Tagger",
+            font=ctk.CTkFont(size=18, weight="bold"),
             text_color=TEXT_PRIMARY,
         )
         app_title.pack(anchor="w")
 
         app_subtitle = ctk.CTkLabel(
-            brand_frame,
-            text="Local Vision AI for Adobe Lightroom",
+            title_container,
+            text="Local Vision AI for Lightroom",
             font=ctk.CTkFont(size=11),
             text_color=TEXT_SECONDARY,
         )
