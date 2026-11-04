@@ -79,10 +79,17 @@ TAGGING_RESPONSE_FORMAT: Dict[str, Any] = {
 class VisionTagger:
     """Client for querying LM Studio's local vision models."""
 
-    def __init__(self, api_url: str = "http://localhost:1234/v1", model: Optional[str] = None, timeout: float = 60.0):
+    def __init__(
+        self,
+        api_url: str = "http://localhost:1234/v1",
+        model: Optional[str] = None,
+        timeout: float = 60.0,
+        system_prompt: Optional[str] = None,
+    ):
         self.api_url = api_url.rstrip("/")
         self.model = model
         self.timeout = timeout
+        self.system_prompt = system_prompt or SYSTEM_PROMPT
 
     def get_available_models(self) -> List[str]:
         """Fetch list of available model IDs from LM Studio."""
@@ -158,7 +165,7 @@ class VisionTagger:
         model_name = self.resolve_model()
 
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": self.system_prompt},
             {
                 "role": "user",
                 "content": [

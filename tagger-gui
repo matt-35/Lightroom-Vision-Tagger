@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Wrapper to launch the Lightroom Vision Auto-Tagger GUI
+CONDA_PYTHON="/opt/miniconda3/envs/torch/bin/python"
+if [ ! -f "$CONDA_PYTHON" ]; then
+    CONDA_PYTHON="python3"
+fi
+exec "$CONDA_PYTHON" -m src --gui "$@"
+

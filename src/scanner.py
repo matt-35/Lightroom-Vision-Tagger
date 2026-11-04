@@ -1,3 +1,5 @@
+import os
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Generator
@@ -33,16 +35,16 @@ class DirectoryScanner:
             raise FileNotFoundError(f"Folder not found or is not a directory: {self.folder}")
 
         candidates = self._find_files()
-        items: List[ImageFileItem] = []
+        if not candidates:
+            return []
 
-        for img_path in candidates:
+        def _check_xmp(img_path: Path) -> ImageFileItem:
             xmp_path = XMPManager.get_sidecar_path(img_path)
             has_xmp = xmp_path.exists()
             existing_tags, existing_hier = (
                 XMPManager.read_tags(xmp_path) if has_xmp else ([], [])
             )
-
-            item = ImageFileItem(
+            return ImageFileItem(
                 image_path=img_path,
                 xmp_path=xmp_path,
                 has_existing_xmp=has_xmp,
@@ -50,21 +52,39 @@ class DirectoryScanner:
                 existing_hierarchical=existing_hier,
             )
 
-            if self.skip_tagged and item.is_already_tagged:
-                continue
+        # Parallelize XMP inspection across threads for speed
+        max_workers = min(32, (os.cpu_count() or 4) * 4)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            items = list(executor.map(_check_xmp, candidates))
 
-            items.append(item)
+        if self.skip_tagged:
+            items = [item for item in items if not item.is_already_tagged]
 
         return items
 
     def _find_files(self) -> List[Path]:
-        """Finds all matching file paths in the directory, skipping hidden and macOS AppleDouble files."""
-        pattern = "**/*" if self.recursive else "*"
+        """Finds all matching file paths using fast os.scandir."""
         matched = []
-        for p in self.folder.glob(pattern):
-            # Skip hidden files and macOS AppleDouble resource fork sidecars (e.g. ._* or .DS_Store)
-            if p.name.startswith("."):
-                continue
-            if p.is_file() and p.suffix.lower() in ALL_SUPPORTED_EXTENSIONS:
-                matched.append(p)
+        exts = ALL_SUPPORTED_EXTENSIONS
+
+        def _scan(dir_path: Path):
+            try:
+                with os.scandir(dir_path) as it:
+                    for entry in it:
+                        name = entry.name
+                        if name.startswith("."):
+                            continue
+                        try:
+                            if entry.is_file(follow_symlinks=False):
+                                dot_idx = name.rfind(".")
+                                if dot_idx != -1 and name[dot_idx:].lower() in exts:
+                                    matched.append(Path(entry.path))
+                            elif self.recursive and entry.is_dir(follow_symlinks=False):
+                                _scan(Path(entry.path))
+                        except (PermissionError, OSError):
+                            pass
+            except (PermissionError, FileNotFoundError, OSError):
+                pass
+
+        _scan(self.folder)
         return sorted(matched)

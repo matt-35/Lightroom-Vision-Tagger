@@ -42,7 +42,7 @@ ALL_SUPPORTED_EXTENSIONS: Set[str] = SUPPORTED_RAW_EXTENSIONS | SUPPORTED_RASTER
 @dataclass
 class TaggerConfig:
     """Configuration settings for the image tagger."""
-    folder: Path
+    folder: Optional[Path] = None
     recursive: bool = False
     api_url: str = "http://localhost:1234/v1"
     model: Optional[str] = None
@@ -55,3 +55,4 @@ class TaggerConfig:
     hierarchical: bool = True     # Generate lr:hierarchicalSubject tags
     temperature: float = 0.2      # Low temperature for deterministic, accurate tags
     confidence_threshold: str = "high"
+    system_prompt: Optional[str] = None

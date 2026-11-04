@@ -54,6 +54,19 @@ class TestScannerAndExtractor(unittest.TestCase):
         self.assertEqual(dims[0], 1000)
         self.assertEqual(dims[1], round(2000 * (1000 / 3000)))
 
+    def test_raw_extractor_preview(self):
+        img_path = self.temp_dir / "preview_sample.jpg"
+        test_img = Image.new("RGB", (2000, 1500), color="green")
+        test_img.save(img_path)
+
+        extractor = RawExtractor()
+        preview = extractor.extract_preview(img_path, max_dimension=400)
+        self.assertLessEqual(max(preview.width, preview.height), 400)
+
+        # Second call should hit the LRU preview cache
+        cached_preview = extractor.extract_preview(img_path, max_dimension=400)
+        self.assertEqual(preview.size, cached_preview.size)
+
 
 if __name__ == "__main__":
     unittest.main()

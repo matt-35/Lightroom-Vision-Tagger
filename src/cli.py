@@ -79,6 +79,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=300.0,
         help="API request timeout in seconds per image (default: 300)",
     )
+    parser.add_argument(
+        "--gui",
+        action="store_true",
+        help="Launch the modern desktop graphical user interface",
+    )
     return parser
 
 
@@ -250,10 +255,19 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
 
+    if args.gui:
+        from src.gui import launch_gui
+        launch_gui(initial_folder=args.folder)
+        return
+
     if args.list_models:
         sys.exit(list_models_action(args.url))
 
     if args.folder is None:
+        if len(sys.argv) == 1:
+            from src.gui import launch_gui
+            launch_gui()
+            return
         parser.print_help()
         sys.exit(1)
 

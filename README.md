@@ -39,9 +39,29 @@ A fast, pure-Python tool that reads camera RAW files and image folders, analyzes
 2. Load a Vision model (e.g. `google/gemma-3-12b`, `nvidia/nemotron-3-nano-omni`, or any multimodal model).
 3. Start the Local Server on port `1234` (OpenAI-compatible server).
 
-### 2. Run the Tagger
+### 2. Launch the Desktop GUI
 
-You can use the included `./tagger` launcher directly:
+You can launch the modern desktop GUI using `./tagger-gui`:
+
+```bash
+./tagger-gui
+```
+
+*(or via python: `./tagger --gui` or `python -m src --gui`)*
+
+**GUI Features**:
+- **🌐 LM Studio Models Dropdown**: Automatically detects available models loaded in LM Studio, badging Vision-capable models with `👁️ [Vision]` and auto-selecting the best model.
+- **📁 Visual File Browser**: Select any folder to scan and see untagged vs. tagged counts, file formats, and status icons.
+- **🖼️ High-Res RAW Image Preview**: Extracts embedded RAW previews on the fly without slow demosaicing.
+- **🧠 System Prompt Editor Window**: Click **"⚙️ Edit System Prompt"** to inspect or modify the AI prompt and customize instructions for your photography style.
+- **🏷️ Tag Inspector & Editor**: View recognized landmarks, flat keywords, and Lightroom hierarchy side-by-side, or tag individual images on demand.
+- **🚀 Batch Execution**: Real-time progress bar, pause/stop controls, and dry-run testing.
+
+---
+
+### 3. Run via CLI (Terminal)
+
+You can also use the included `./tagger` CLI launcher directly:
 
 ```bash
 # List available models in LM Studio and see which support Vision:
@@ -98,6 +118,7 @@ Once the script has finished creating or updating `.xmp` files:
 | `--url` | LM Studio API endpoint | `http://localhost:1234/v1` |
 | `--max-size` | Long edge pixel dimension for vision input | `1536` |
 | `--timeout` | Timeout in seconds per image | `300.0` |
+| `--gui` | Launch the modern desktop GUI | `False` |
 
 ---
 

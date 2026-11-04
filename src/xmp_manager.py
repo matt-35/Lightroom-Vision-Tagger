@@ -48,6 +48,9 @@ class XMPManager:
             return [], []
 
         content = xmp_path.read_text(encoding="utf-8", errors="replace")
+        if "subject" not in content and "hierarchicalSubject" not in content:
+            return [], []
+
         xml_content = cls._strip_xpacket(content)
 
         try:
@@ -148,6 +151,9 @@ class XMPManager:
     ) -> Tuple[List[str], List[str]]:
         """Safely updates an existing XMP sidecar without altering other metadata."""
         content = xmp_path.read_text(encoding="utf-8", errors="replace")
+        if "subject" not in content and "hierarchicalSubject" not in content:
+            return [], []
+
         xml_content = cls._strip_xpacket(content)
 
         try:
