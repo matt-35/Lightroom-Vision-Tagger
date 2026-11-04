@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 class TaggingResult(BaseModel):
     """Structured response from the vision model."""
     tags: List[str] = Field(default_factory=list, description="Descriptive flat keywords")
-    places: List[str] = Field(default_factory=list, description="Recognized iconic places or landmarks")
+    places: List[str] = Field(default_factory=list, description="Deprecated / empty")
     hierarchical_tags: List[str] = Field(
         default_factory=list,
         description="Lightroom hierarchical tags using pipe delimiter like Category|Subcategory"
@@ -20,24 +20,23 @@ SYSTEM_PROMPT = """You are an expert photography metadata tagger for Adobe Light
 Analyze the provided image and generate comprehensive, high-quality tags for cataloging and searching.
 
 Focus on:
-1. General descriptive tags: subjects, objects, animals, flora, landscape elements, architecture.
+1. General descriptive tags: subjects, objects, animals, flora, landscape elements, architecture, materials, colors.
 2. Photographic conditions: lighting (e.g., golden hour, blue hour, overcast, harsh sunlight, backlit, studio lighting), weather, season, mood, composition (e.g., wide angle, macro, close-up, aerial, silhouette, long exposure).
-3. Named & iconic places: Identify any specific famous landmark, monument, national park, iconic skyline, or recognizable location (e.g., "Grand Canyon", "Yosemite National Park", "Half Dome", "Eiffel Tower", "Golden Gate Bridge", "Mount Rainier", "Times Square", "Kyoto Fushimi Inari"). If the specific location cannot be determined with certainty, provide geographic scene types (e.g., "Pacific Northwest", "Alpine Mountain Range", "Coastal Cliff").
-4. Hierarchical tags: Structured categories separated by pipe '|' for Lightroom hierarchies, such as:
-   - "Places|Landmark Name" or "Places|Region|Landmark"
+3. Hierarchical tags: Structured categories separated by pipe '|' for Lightroom hierarchies, such as:
    - "Nature|Landscape|Mountains"
    - "Nature|Wildlife|Mammal"
    - "Lighting|Golden Hour"
    - "Architecture|Modern|Bridge"
+   - "Subject|People|Portrait"
+   Do NOT attempt to guess or identify specific named landmarks, monuments, or geographic locations unless explicitly visible in signage or text. Instead, use general scene descriptors (e.g., "mountain", "coastal cliff", "city skyline").
 
 Return ONLY a valid JSON object matching this schema:
 {
   "tags": ["keyword1", "keyword2", ...],
-  "places": ["Landmark/Place Name 1", ...],
   "hierarchical_tags": ["Category|Subcategory|Item", ...],
   "description": "Short 1-2 sentence summary of the image."
 }
-Keep keywords concise, singular where appropriate, lower-case for common tags, and Title Case for proper nouns/places.
+Keep keywords concise, singular where appropriate, and lower-case.
 """
 
 
@@ -54,11 +53,6 @@ TAGGING_RESPONSE_FORMAT: Dict[str, Any] = {
                     "items": {"type": "string"},
                     "description": "Descriptive flat keywords"
                 },
-                "places": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Recognized iconic places or landmarks"
-                },
                 "hierarchical_tags": {
                     "type": "array",
                     "items": {"type": "string"},
@@ -69,7 +63,7 @@ TAGGING_RESPONSE_FORMAT: Dict[str, Any] = {
                     "description": "1-2 sentence descriptive caption"
                 }
             },
-            "required": ["tags", "places", "hierarchical_tags", "description"],
+            "required": ["tags", "hierarchical_tags", "description"],
             "additionalProperties": False
         }
     }
@@ -171,7 +165,7 @@ class VisionTagger:
                 "content": [
                     {
                         "type": "text",
-                        "text": "Analyze this photo and provide keywords, recognized places, hierarchical tags, and description as JSON."
+                        "text": "Analyze this photo and provide keywords, hierarchical tags, and description as JSON."
                     },
                     {
                         "type": "image_url",
@@ -248,42 +242,27 @@ class VisionTagger:
         except json.JSONDecodeError:
             # Fallback regex extraction if full JSON parsing fails
             tags_match = re.findall(r'"tags"\s*:\s*\[(.*?)\]', cleaned, re.DOTALL)
-            places_match = re.findall(r'"places"\s*:\s*\[(.*?)\]', cleaned, re.DOTALL)
             hier_match = re.findall(r'"hierarchical_tags"\s*:\s*\[(.*?)\]', cleaned, re.DOTALL)
 
             tags = [t.strip(' "\'\n\r') for t in tags_match[0].split(",")] if tags_match else []
-            places = [p.strip(' "\'\n\r') for p in places_match[0].split(",")] if places_match else []
             hier = [h.strip(' "\'\n\r') for h in hier_match[0].split(",")] if hier_match else []
 
             return TaggingResult(
                 tags=[t for t in tags if t],
-                places=[p for p in places if p],
+                places=[],
                 hierarchical_tags=[h for h in hier if h],
                 description=""
             )
 
-        # Merge places into tags if not already present
         flat_tags = [t.strip() for t in parsed.get("tags", []) if isinstance(t, str) and t.strip()]
-        places = [p.strip() for p in parsed.get("places", []) if isinstance(p, str) and p.strip()]
-
-        for place in places:
-            if place.lower() not in {t.lower() for t in flat_tags}:
-                flat_tags.append(place)
-
         hierarchical = [
             h.strip() for h in parsed.get("hierarchical_tags", [])
             if isinstance(h, str) and h.strip()
         ]
 
-        # Add places into hierarchical tags if missing
-        for place in places:
-            place_hier = f"Places|{place}"
-            if place_hier.lower() not in {h.lower() for h in hierarchical}:
-                hierarchical.append(place_hier)
-
         return TaggingResult(
             tags=flat_tags,
-            places=places,
+            places=[],
             hierarchical_tags=hierarchical,
             description=parsed.get("description", "")
         )

@@ -197,8 +197,6 @@ def run_pipeline(config: TaggerConfig) -> int:
                 console.print(f"\n📷 [bold]{item.image_path.name}[/bold] [dim]({dims[0]}x{dims[1]})[/dim]")
                 if result.description:
                     console.print(f"   [dim italic]{result.description}[/dim italic]")
-                if result.places:
-                    console.print(f"   🏛️  [bold magenta]Places:[/bold magenta] {', '.join(result.places)}")
                 console.print(f"   🏷️  [bold green]Tags:[/bold green] {', '.join(result.tags)}")
                 if result.hierarchical_tags:
                     console.print(f"   🌲 [bold blue]Hierarchy:[/bold blue] {', '.join(result.hierarchical_tags[:4])}{'...' if len(result.hierarchical_tags) > 4 else ''}")

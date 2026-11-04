@@ -2,6 +2,10 @@
 
 A fast, pure-Python tool that reads camera RAW files and image folders, analyzes them using a local Vision Language Model (VLM) running in **LM Studio**, and writes Lightroom-compatible keywords and hierarchical tags directly into **`.xmp` sidecar files**.
 
+<p align="center">
+  <img src="assets/screenshot.png" alt="Lightroom Vision Auto-Tagger Desktop App" width="100%">
+</p>
+
 ---
 
 ## ✨ Features
@@ -9,13 +13,12 @@ A fast, pure-Python tool that reads camera RAW files and image folders, analyzes
 - **🚀 Ultra-Fast RAW Preview Extraction**:
   - Leverages embedded full/high-resolution JPEG previews found inside camera RAW files (Canon `.CR2`/`.CR3`, Sony `.ARW`, Nikon `.NEF`, Fuji `.RAF`, `.DNG`, etc.) using `rawpy`.
   - Avoids slow demosaicing while retaining optimal quality for AI vision inference (< 50ms extraction).
-- **🏛️ Named Iconic Places & Landmarks**:
-  - Detects recognized world landmarks, national parks, monuments, skylines, and mountain peaks (e.g., *Yosemite National Park*, *Half Dome*, *Eiffel Tower*, *Golden Gate Bridge*).
 - **🌲 Lightroom Hierarchical Tags**:
   - Writes standard flat keywords (`dc:subject`) and Adobe hierarchical categories (`lr:hierarchicalSubject`), e.g.:
-    - `Places|USA|California|Yosemite`
     - `Nature|Landscape|Mountains`
     - `Lighting|Golden Hour`
+    - `Architecture|Modern|Bridge`
+    - `Subject|People|Portrait`
 - **🔒 Safe & Non-Destructive**:
   - Preserves existing Lightroom develop adjustments (`crs:*`), star ratings (`xmp:Rating`), color labels, and crop settings.
   - Safely merges new tags into existing `.xmp` sidecars without duplicates (or replaces them if `--overwrite` is specified).
@@ -54,7 +57,7 @@ You can launch the modern desktop GUI using `./tagger-gui`:
 - **📁 Visual File Browser**: Select any folder to scan and see untagged vs. tagged counts, file formats, and status icons.
 - **🖼️ High-Res RAW Image Preview**: Extracts embedded RAW previews on the fly without slow demosaicing.
 - **🧠 System Prompt Editor Window**: Click **"⚙️ Edit System Prompt"** to inspect or modify the AI prompt and customize instructions for your photography style.
-- **🏷️ Tag Inspector & Editor**: View recognized landmarks, flat keywords, and Lightroom hierarchy side-by-side, or tag individual images on demand.
+- **🏷️ Tag Inspector & Editor**: View flat keywords, Lightroom hierarchical tags, and AI captions side-by-side, or tag individual images on demand.
 - **🚀 Batch Execution**: Real-time progress bar, pause/stop controls, and dry-run testing.
 
 ---

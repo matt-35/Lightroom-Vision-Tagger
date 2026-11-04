@@ -67,8 +67,7 @@ class PromptEditorWindow(ctk.CTkToplevel):
 
         schema_text = (
             "⚠️ Important: The model must return valid JSON with these keys:\n"
-            "• tags (list of strings)  • places (list of recognized landmarks)  "
-            "• hierarchical_tags (list of Category|Subcategory)  • description (string)"
+            "• tags (list of strings)  • hierarchical_tags (list of Category|Subcategory)  • description (string)"
         )
         schema_lbl = ctk.CTkLabel(
             schema_frame,

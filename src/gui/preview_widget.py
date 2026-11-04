@@ -106,27 +106,6 @@ class PreviewWidget(ctk.CTkFrame):
         )
         self.desc_val.grid(row=1, column=0, sticky="w", pady=(0, 8))
 
-        # Recognized Places
-        places_title = ctk.CTkLabel(
-            self.scroll_details,
-            text="🏛️ Recognized Places / Landmarks",
-            font=ctk.CTkFont(size=12, weight="bold"),
-            text_color=ACCENT_PURPLE,
-            anchor="w",
-        )
-        places_title.grid(row=2, column=0, sticky="w", pady=(4, 2))
-
-        self.places_val = ctk.CTkLabel(
-            self.scroll_details,
-            text="—",
-            font=ctk.CTkFont(size=12, weight="bold"),
-            text_color=TEXT_PRIMARY,
-            wraplength=340,
-            justify="left",
-            anchor="w",
-        )
-        self.places_val.grid(row=3, column=0, sticky="w", pady=(0, 8))
-
         # Flat Keywords
         tags_title = ctk.CTkLabel(
             self.scroll_details,
@@ -135,18 +114,18 @@ class PreviewWidget(ctk.CTkFrame):
             text_color=ACCENT_SUCCESS,
             anchor="w",
         )
-        tags_title.grid(row=4, column=0, sticky="w", pady=(4, 2))
+        tags_title.grid(row=2, column=0, sticky="w", pady=(4, 2))
 
         self.tags_textbox = ctk.CTkTextbox(
             self.scroll_details,
-            height=65,
+            height=75,
             font=ctk.CTkFont(size=12),
             border_width=1,
             border_color=CARD_BORDER,
             fg_color="#0F1017",
             wrap="word",
         )
-        self.tags_textbox.grid(row=5, column=0, sticky="ew", pady=(0, 8))
+        self.tags_textbox.grid(row=3, column=0, sticky="ew", pady=(0, 8))
 
         # Hierarchical Tags
         hier_title = ctk.CTkLabel(
@@ -156,18 +135,18 @@ class PreviewWidget(ctk.CTkFrame):
             text_color=ACCENT_PRIMARY,
             anchor="w",
         )
-        hier_title.grid(row=6, column=0, sticky="w", pady=(4, 2))
+        hier_title.grid(row=4, column=0, sticky="w", pady=(4, 2))
 
         self.hier_textbox = ctk.CTkTextbox(
             self.scroll_details,
-            height=65,
+            height=75,
             font=ctk.CTkFont(size=12),
             border_width=1,
             border_color=CARD_BORDER,
             fg_color="#0F1017",
             wrap="word",
         )
-        self.hier_textbox.grid(row=7, column=0, sticky="ew", pady=(0, 8))
+        self.hier_textbox.grid(row=5, column=0, sticky="ew", pady=(0, 8))
 
         # 4. Action Buttons Footer
         action_bar = ctk.CTkFrame(self, fg_color="transparent")
@@ -219,7 +198,6 @@ class PreviewWidget(ctk.CTkFrame):
         # Populate current tags from XMP
         self._populate_tags(item.existing_tags, item.existing_hierarchical)
         self.desc_val.configure(text="Select 'Tag This Image' or run Batch to generate description")
-        self.places_val.configure(text="—")
 
         self.tag_single_btn.configure(state="normal")
         self.save_btn.configure(state="normal")
@@ -249,10 +227,6 @@ class PreviewWidget(ctk.CTkFrame):
         """Displays AI tagging results."""
         if result.description:
             self.desc_val.configure(text=result.description)
-        if result.places:
-            self.places_val.configure(text=", ".join(result.places))
-        else:
-            self.places_val.configure(text="None detected")
 
         self._populate_tags(result.tags, result.hierarchical_tags)
 

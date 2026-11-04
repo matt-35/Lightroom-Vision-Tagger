@@ -110,10 +110,9 @@ class TestGuiStateAndWorkers(unittest.TestCase):
 
         mock_tagger = MagicMock()
         mock_tagger.analyze_image.return_value = TaggingResult(
-            tags=["sunset", "half dome"],
-            places=["Yosemite National Park"],
-            hierarchical_tags=["Places|Yosemite"],
-            description="Half Dome at sunset.",
+            tags=["sunset", "granite peaks"],
+            hierarchical_tags=["Nature|Landscape|Mountains"],
+            description="Granite mountain peaks at sunset.",
         )
         mock_tagger_cls.return_value = mock_tagger
 
